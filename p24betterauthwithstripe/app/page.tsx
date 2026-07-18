@@ -98,7 +98,7 @@ export default async function Home() {
 /*
 
 # Better Auth installatn steps
-1. install auth
+1. npm install better-auth
 2. make .env file and paste secret key and auth url
 3. create a better auth instance or auth.ts file in lib or utils folder
 4. now configure the db or setup db -> copy connectn string in .env file
@@ -116,9 +116,9 @@ Visit to google cloud console -> console at top right -> create a project -> Api
 7. As we are using prisma for db so install it as:
 npm install -D prisma
 npm i @prisma/client @prisma/adapter-pg pg
-npm prisma init -> it generates prisma folder and prisma.schema.ts file
+npx prisma init -> it generates prisma folder and prisma.schema.ts file
 
-8. create lib/db.ts file
+8. create empty lib/db.ts file
 npx prisma generate
 
 9. update auth.ts file by using prismaadapter
@@ -137,6 +137,8 @@ use them authlayout
 
 15. now setup page.jsx and we are using remote image here so define remote pattern
 
+// To add different components from shadcn run this cmd as: npx shadcn@latest add
+
 16. Now we want to show login page to user once when user is not loged in else user is not able to see login page again till session ends or it explicitly logged out. 
 
 17. So create logout btn component with logout fn and import & use it into page.jsx
@@ -151,234 +153,22 @@ signin - login into previously created account
 # Notice that confirmPassword is never sent to Better Auth. It's only used for client-side validation.
 
 
-clerk is a complete user mangmnt platform that can save all user data stuff
 
 
 
 
+# If made changes in schema.prisma file then use these cmds to update
+1. npx prisma migrate dev
+Creates a migration.
+Updates the database schema.
+Regenerates Prisma Client.
 
-# Polar steps
-// Polar integration
-1. install polar with better auth : npm install better-auth @polar-sh/better-auth @polar-sh/sdk
-2. Configure Polar Access Token as : Polar settings -> developers -> create token -> cpy token and paste into env file
-3. Configure BetterAuth Server by cpying code from there to auth.ts
-The Polar plugin comes with it’s own set of plugins to add functionality to your stack:
-checkout - Enable seamless checkout integration
-portal - Make it possible for your customers to manage their orders, subscriptions & benefits
-usage - List customer meters & ingest events for Usage Based Billing
-webhooks - Listen for relevant Polar webhooks
--> Whenevr you want to wor with polar, initialise polar client -> add plugins inisde better auth config
-// createCustomerOnSignUp: true -> it will automatically create a customer inside polar whenevr user signup
-// use -> contain checout -> products -> accept id & slug
-
-4. Go inside product sectn of polar -> create product with meta data & benefits -> cpy product id -> paste inside  plugin product id
-
-5. Now go to auth-client and create plugin with polarclient
-
-6. Now add plan in schema.prisma
-
-7. To expose localhost as public url, we need to install ngrok and setup that
-
-8. Then run this cmd in command prompt: ngrok http 3000 -> it will expose localhost to public and provide url
-
-9. now open webhook plugin guide present right side in dashboard of polar
-
-10. Now to configure webhooks endpts in polar -> go to polar -> settings -> webhooks -> Add endpts -> create that by adding copied public url with /api/auth/polar/webhook in url
-
-11. This will create webhooks secret -> cpy them and paste into env file
-
-12. Our terminal will provide develop host with allowedurl field -> allow third party to access localhost -> cpy that and paste into -> next.config.ts
-
-13. Add webhooks plugins inside auth.ts velow checkout with events
-
-14. Now when user signin -> customer created automatically in polar custimer sectn -> So to find it -> we use customer external id -> present in customer sectn -> which maps to user db id or prisma studio user id
-
-15. Now use this id to update user while creating events such as onOrderPaid,onOrderCreated inside webhook plugin in auth.ts
-
-16. Now format homepage to handle change of plan field or homepage only shows logo,email and plan active
-
-
-
-
-
-# Polar code
-1. for page.jsx below is code
-2. for pricing card only this code in handlesubs fn ->
-await authClient.checkout({
-  slug:'pro'
-})
-3. Code in auth.ts as :
-plugins: [
-    polar({
-      client: polarClient,
-      createCustomerOnSignUp: true,
-      use: [
-        checkout({
-          products:[
-            {
-              productId: '00e87ae4-9089-4dbf-954d-083e875e96c5',
-              slug: 'pro'
-            }
-          ],
-          successUrl: '/',
-          authenticatedUsersOnly: true
-        })
-      ]
-    })
-]
-4. Polar access toen in env file
-5. Plugin in auth-client
-
-
-<Image src={user.image!} alt="userimage" className="object-contain rounded-full" height={70} width={70} />
-      <h2 className="text-3xl font-bold mt-5">{user.name}</h2>
-      <p className="text-xl font-semibold text-zinc-200">{user.email}</p>
-
-      <div className="flex flex-col justify-center items-center gap-10 space-y-2">
-        <Badge variant={dbuser?.plan === 'FREE' ? 'default' : 'destructive'}>
-          {dbuser?.plan}
-        </Badge>
-        {
-          dbuser?.plan === 'FREE' && (
-            <Link href={'/pricing'} className={buttonVariants()}>
-              Go to Pricing
-            </Link>
-          )
-        }
-      </div>
-      <LogoutButton />
-
-
-
-
-
-
-
-
-
-
-ROUTE.TS OLDER CODE:
-
-import { stripeClient } from "@/lib/stripe";
-import {prisma} from '@/lib/db'
-import { STRIPE_PRICE_IDS } from "@/lib/stripe";
-import { NextRequest, NextResponse } from "next/server";
-import { requireAuth } from "@/lib/auth-guard";
-import Stripe from "stripe";
-import { headers } from "next/headers";
-
-const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
-
-export async function POST(request:NextRequest){
-    try {
-        const body = await request.text()
-        const headerList = await headers()
-        const signature = headerList.get('stripe-signature') as string;
-
-        let event: Stripe.Event;
-
-        try {
-            event = stripeClient.webhooks.constructEvent(
-                body,
-                signature,
-                webhookSecret as string
-            )   
-        } catch (error) {
-            console.log("Webhook signature verification failed", error);
-            return NextResponse.json({error: 'Invalid Signature'},{status: 400})
-        }
-
-        switch(event.type){
-            case "checkout.session.completed": {
-                const session = event.data.object as Stripe.Checkout.Session;
-
-                const userId = session.metadata?.userId;
-                const priceId = session.metadata?.priceId;
-
-                if(!userId || !priceId || !session.subscription) break;
-
-                const subscription = await stripeClient.subscriptions.retrieve(
-                    session.subscription as string
-                )
-
-                await prisma.user.update({
-                    where: {id: userId},
-                    data: {
-                        stripeSubscriptionId: subscription.id,
-                        stripePriceId: priceId,
-                        stripeCurrentPeriodEnd: new Date(
-                            subscription.items.data[0].current_period_end*1000
-                        ),
-                        plan: priceId === 'premium' ? 'PREMIUM' : "FREE"
-                    }
-                })
-                break;
-            }
-
-            case "customer.subscription.updated": {
-                const subscription = event.data.object as Stripe.Subscription
-                const customerId = subscription.customer as string;
-
-                const user = await prisma.user.findFirst({
-                    where: {stripeCustomerId: customerId}
-                })
-
-                if(!user) break;
-
-                // derive plan from Stripe(not db)
-                const priceId = subscription.items.data[0]?.price.id
-
-                const isActive = subscription.status === 'active'
-
-                await prisma.user.update({
-                    where: {id: user.id},
-                    data: {
-                        stripePriceId: priceId,
-                        stripeCurrentPeriodEnd: new Date(
-                            subscription.items.data[0].current_period_end*1000
-                        ),
-                        plan: isActive && priceId === 'premium' ? 'PREMIUM' : "FREE"
-                    }
-                })
-                break;
-            }
-
-            case 'customer.subscription.deleted': {
-                const subscription = event.data.object as Stripe.Subscription
-                const customerId = subscription.customer as string;
-
-                const user = await prisma.user.findFirst({
-                    where: {stripeCustomerId: customerId}
-                })
-
-                if(!user) break;
-
-                await prisma.user.update({
-                    where: {id: user.id},
-                    data: {
-                        stripeSubscriptionId: null,
-                        stripePriceId: null,
-                        stripeCurrentPeriodEnd: null,
-                        plan: "FREE"
-                    }
-                })
-                break;
-            }
-
-            default:
-                console.log(`Unhandled event: ${event.type}`)
-        }
-
-        return NextResponse.json({received: true})
-    }
-
-    // listen multiple events on the basis of condn
-    catch (error) {
-        console.log("Error processing Webhook", error);
-        return NextResponse.json({error: 'Error processing Webhook'},{status: 500})
-    }
-}
-
+2. npx prisma generate
+Only regenerates the Prisma Client.
+It does not:
+Create migrations ❌
+Update the database ❌
+It only updates the generated client in your project.
 
 
 
