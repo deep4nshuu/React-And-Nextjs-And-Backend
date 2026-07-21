@@ -4,7 +4,6 @@ import { Suspense } from "react";
 
 export default async function Home() {
 
-
   return (
     <>
       <h1>Users Directory</h1>
@@ -25,7 +24,7 @@ export default async function Home() {
 
 1. create page.jsx and then fetch moc api data by using moc api
 2. now run build cmd
-3. while fetching url, pass type of cache we want to use: no-store(store nothing and catch fresh data) , force-cache(show only cache data not fresh one), next->revalidata:sec (it will refectch data in given time or cache data for derive period of time) & revalidate on demand (wnher need to revalidate cached data -> you neeed to tag the data with some identifier -> help in revlidating)
+3. while fetching url, pass type of cache we want to use: no-store(store nothing and catch fresh data) , force-cache(show only cache data not fresh one), next->revalidate:sec (it will refectch data in given time or cache data for derive period of time) & revalidate on demand (wnher need to revalidate cached data -> you neeed to tag the data with some identifier -> help in revlidating)
 
 // now to revalidate on demand -> create server actn and one fn to fetch and another to update -> use revalidateTag(tag,profile) 
 
@@ -67,6 +66,7 @@ export default async function Home() {
 
 
 # Caching in Nextjs 16
+
 To use cache component fr caching -> go to nextconfig -> enable cachecompo as true
 -> it have cache timing options -> whic only wor inside "use cache" directive such as:
 -> cachelife() : min,sec,day 

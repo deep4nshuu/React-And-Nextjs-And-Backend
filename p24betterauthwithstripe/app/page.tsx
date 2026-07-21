@@ -152,7 +152,10 @@ signin - login into previously created account
 
 # Notice that confirmPassword is never sent to Better Auth. It's only used for client-side validation.
 
-
+# Flow: 
+User click login  -> Login Page(client) -> authClient.signIn() -> /api/auth/[...all]/route.ts  -> auth.ts(auth config) -> Prisma adapter -> Pgsql db -> session created -> browser recieve secure cookie -> Protected page -> auth guard checks session 
+-> Valid -> Show Page
+-> Invalid -> Redirect to login
 
 
 
@@ -169,6 +172,134 @@ It does not:
 Create migrations ❌
 Update the database ❌
 It only updates the generated client in your project.
+
+
+
+*/
+
+
+
+/*
+
+
+# Webhoos flow
+How Does a Webhook Work?
+
+Suppose a payment succeeds.
+
+Step 1
+
+User pays.
+
+↓
+
+Step 2
+
+Stripe records the payment.
+
+↓
+
+Step 3
+
+Stripe creates an event.
+
+Example:
+
+checkout.session.completed
+
+↓
+
+Step 4
+
+Stripe sends an HTTP POST request to your webhook URL.
+
+Example
+
+POST /api/stripe/webhook
+
+↓
+
+Step 5
+
+Your server receives the request.
+
+↓
+
+Step 6
+
+Your code updates the database.
+
+
+
+*/
+
+
+
+
+
+/*
+
+# Stripe Payment Integratn Setup
+
+Tech Stack: Next + better auth + Prisma + Neon + Stripe
+
+Workflow:
+User Signs Up  ->  Default Free Plan Created  ->  User Clicks "Upgrade"  ->  Pricing Page  ->  Stripe Checkout Session  ->  Stripe Payment Page  ->  Payment Successful  ->  Stripe Webhook  ->  Database Updated  ->  User Becomes Premium
+
+Step 1: Complete Authenticatn
+1. Make authenticatn functionality of login with github and google
+2. Before setting up stripe, set up authenticatn
+
+Step 2: Install stripe
+3. npm i stripe @stripe/stripe.js
+
+Step 3: Stripe dashboard setup
+4. sign in stripe and cpy secret and public key from stripe dashboard and paste into env file
+5. Create Stripe Client as lib/stripe.ts file to define stripe client and public key to use stripe
+
+Step4: Update db
+6. Inside schema.prisma, create dynamic val of plan field and also create plan field, stripecustomerid, etc stripe field in User model 
+7. Apply migratn as:
+npx prisma migrate dev
+npm prisma generate
+
+Step5: Setup pricing page
+8. Now create app/pricing/page.tsx where only authenticatn user can go
+
+Step6: Stripe product setup
+9. Now go to stripe and create a product inside product catalog
+10. now copy product id from price.created event data
+
+Step 7: Create pricing ui
+11. now create the pricing page structure
+12. Create a pricing-card component and make handlesubscriptn fn and pass to btn and use it in pricing page
+
+# Always working with any payment system, it can be razorpay,stripe,etc -> Always first create checkout route or checkpt and then webhooks folder
+
+Step 8: Create Checkout Route -> Creates stripe checkout session
+13. Now create api/stripe folder
+14. create api/stripe/checkout/route.js
+16. inside that -> create session -> get fetch priceId from req -> find user using id from session -> create customer if not exist -> create checkout session 
+Also create Next Public App Url as localhost inside env file
+
+Step 9: Install stripe cli
+17. Search for stripe webhooks -> download stripe cli or stripe.exe from github -> extract it -> add path to env vars 
+18. Now run: stripe login inside terminal -> after that signup and you will be connnected to stripe
+19. Run : stripe listen --forward-to localhost:3000/api/stripe/webhooks  -> running this cmd will connnect stripe backend to project/my backend and can talk
+
+Step 10: Create Webhook Route -> Receives stripe events after payment
+20. Now create webhooks route as stripe/webhook/route.ts to check or receieve events while payment happens or to listen events inside terminal
+
+21. It will give webhook secret and paste that into env file
+
+Step 11: Handle events
+22. Now create event listeners inside webhook route 
+-> get body and signature from req -> create event using constructEvent() -> create switch and case statemnt to listen multiple events -> create these cases: 
+checkout.session.completed(fetch session, userId,priceId,subscriptn -> then update user), customer.subscription.updated(fetch subscritpn,customer & price id, user, isActive -> then update user), 
+customer.subscription.deleted(fetch subscritpn,customer id, user -> then update user)
+
+Step 12: Update Ui
+23. Now restructure homepage or root page by adding user to handle payment and add btns for Plan & Redirect to pricing page
 
 
 

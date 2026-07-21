@@ -55,8 +55,10 @@ export default async function Home() {
 
 /*
 
-# Polar steps
-// Polar integration
+# Polar Authenticatn Setup 
+
+-> Complete Better Auth installatn and config
+
 1. install polar with better auth : npm install better-auth @polar-sh/better-auth @polar-sh/sdk
 
 2. Configure Polar Access Token as : Polar settings -> developers -> create token -> cpy token and paste into env file
@@ -96,5 +98,51 @@ webhooks - Listen for relevant Polar webhooks
 15. Now use this id to update user while creating events such as onOrderPaid,onOrderCreated inside webhook plugin in auth.ts
 
 16. Now format homepage to handle change of plan field or homepage only shows logo,email and plan active
+
+
+
+
+# Installing Ngrok ->
+
+Step 1: Create an ngrok account
+Go to: https://dashboard.ngrok.com/signup
+Create an account and verify your email.
+
+Step 2: Get your Authtoken
+Open: https://dashboard.ngrok.com/get-started/your-authtoken
+You'll see something like: ngrok config add-authtoken 2AbCdEfGhIjKlMnOpQrStUvWxYz123456789
+Copy the entire command.
+
+Step 3: Run the command
+Open Command Prompt (or PowerShell).
+Paste it exactly -> run it
+
+For Confirm, You should get something like:
+Authtoken saved to configuration file:
+C:\Users\HP\AppData\Local\ngrok\ngrok.yml
+Now your PC is authenticated.
+
+
+Step 4: Verify ngrok
+Run: ngrok version
+Then: ngrok config check
+It should report no configuration errors.
+
+Step 5: Start your Next.js app
+Your app should be running at localhost
+
+Step 6: Start ngrok
+Open another terminal.
+Run : ngrok http 3000
+
+You should now see something like ->
+Forwarding
+https://abc123.ngrok-free.app
+        ↓
+http://localhost:3000
+
+This HTTPS URL is what you'll use for webhooks.
+
+
 
 */
